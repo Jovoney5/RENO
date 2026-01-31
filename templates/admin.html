@@ -1,0 +1,34 @@
+<!-- templates/admin.html – updated with PDF button -->
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h3 class="text-center mb-3">Admin – Roster</h3>
+  <div class="d-flex gap-3 flex-wrap mb-4 justify-content-center">
+    <button onclick="document.querySelectorAll('.card-img-top').forEach(i=>i.classList.toggle('circle'))" class="btn btn-light">Toggle Circle / Square</button>
+    <a href="/download_roster" class="btn btn-light">Download CSV</a>
+    <a href="/download_pdf" class="btn btn-light">Download PDF</a>
+    <a href="/logout" class="btn btn-outline-light">Logout</a>
+  </div>
+  <div class="row g-3">
+    {% for p in players %}
+    <div class="col-6 col-md-4 col-lg-3">
+      <div class="card text-center">
+        {% if p[6] %}<img src="data:image/jpeg;base64,{{ p[6] }}" class="card-img-top" alt="{{ p[1] }}">{% endif %}
+        <div class="card-body">
+          <h5>{{ p[1] }}</h5>
+          <p>Pos: {{ p[2] }}</p>
+          <p>DOB: {{ p[3] }}</p>
+          <p>Ht: {{ p[4] }}</p>
+          <p>Born: {{ p[5] }}</p>
+          <div class="mt-2">
+            <a href="/edit/{{ p[0] }}" class="btn btn-sm btn-light">Edit</a>
+            <a href="/delete/{{ p[0] }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete?')">Delete</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

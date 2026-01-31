@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Add Player{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h3 class="text-center mb-4">Add New Player</h3>
+  <form method="post" enctype="multipart/form-data" class="col-md-8 mx-auto">
+    <div class="mb-3"><input type="text" name="name" class="form-control" placeholder="Full Name" required></div>
+    <div class="mb-3"><input type="text" name="position" class="form-control" placeholder="Position" required></div>
+    <div class="mb-3"><input type="date" name="dob" class="form-control" required></div>
+    <div class="mb-3"><input type="text" name="height" class="form-control" placeholder="Height (e.g. 6'2")" required></div>
+    <div class="mb-3"><input type="text" name="place_birth" class="form-control" placeholder="Place of Birth" required></div>
+    <div class="mb-3"><input type="file" name="photo" class="form-control" accept="image/*" required></div>
+    <button type="submit" class="btn btn-light w-100">Save Player</button>
+  </form>
+</div>
+{% endblock %}
