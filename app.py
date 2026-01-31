@@ -94,7 +94,7 @@ def add():
                   (name, position, dob, height, place_birth, photo_data))
         conn.commit()
         conn.close()
-        return redirect(url_for('admin'))
+        return redirect(url_for('dashboard'))  # Changed from 'admin' to 'dashboard'
     return render_template('add.html')
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
