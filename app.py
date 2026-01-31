@@ -253,62 +253,84 @@ def download_roster():
 @app.route('/download_pdf')
 @login_required
 def download_pdf():
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute("SELECT name, position, dob, height, place_birth, photo FROM players")
-    players = c.fetchall()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("SELECT name, position, dob, height, place_birth, photo FROM players ORDER BY name")
+        players = c.fetchall()
+        conn.close()
 
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), rightMargin=30, leftMargin=30, topMargin=30,
-                            bottomMargin=30)
-    elements = []
+        # Create PDF in memory
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(letter),
+            rightMargin=30,
+            leftMargin=30,
+            topMargin=30,
+            bottomMargin=30
+        )
 
-    styles = getSampleStyleSheet()
-    title = Paragraph("RENO Roster - Player List", styles['Title'])
-    elements.append(title)
-    elements.append(Spacer(1, 0.3 * inch))
+        elements = []
+        styles = getSampleStyleSheet()
 
-    data = [['Photo', 'Name', 'Position', 'DOB', 'Height', 'Place of Birth']]
+        # Add title
+        title = Paragraph("<b>RENO Roster - Player List</b>", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 0.3 * inch))
 
-    for player in players:
-        name, pos, dob, height, pob, photo_blob = player
-        if photo_blob:
-            # Handle both SQLite and PostgreSQL binary data
-            photo_bytes = bytes(photo_blob) if isinstance(photo_blob, memoryview) else photo_blob
-            img_buffer = io.BytesIO(photo_bytes)
-            try:
-                img = Image(img_buffer, width=0.8 * inch, height=0.8 * inch)
-            except:
-                img = Paragraph("No Image", styles['Normal'])
-        else:
-            img = Paragraph("No Image", styles['Normal'])
+        # Create table data - simplified without images first
+        data = [['Name', 'Position', 'DOB', 'Height', 'Place of Birth']]
 
-        data.append([img, name or "", pos or "", dob or "", height or "", pob or ""])
+        for player in players:
+            name, pos, dob, height, pob, photo_blob = player
+            data.append([
+                name or "N/A",
+                pos or "N/A",
+                dob or "N/A",
+                height or "N/A",
+                pob or "N/A"
+            ])
 
-    table = Table(data, colWidths=[1.2 * inch, 2 * inch, 1.5 * inch, 1.2 * inch, 1.2 * inch, 2.5 * inch])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-    ]))
+        # Create and style table
+        table = Table(data, colWidths=[2.5 * inch, 2 * inch, 1.5 * inch, 1.2 * inch, 2.5 * inch])
+        table.setStyle(TableStyle([
+            # Header row
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            # Data rows
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ]))
 
-    elements.append(table)
+        elements.append(table)
 
-    doc.build(elements)
-    buffer.seek(0)
+        # Build PDF
+        doc.build(elements)
+        buffer.seek(0)
 
-    response = make_response(buffer.getvalue())
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'attachment; filename=reno_roster.pdf'
-    return response
+        # Send file
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name='reno_roster.pdf'
+        )
+
+    except Exception as e:
+        # Log the error and return user-friendly message
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"PDF Error: {error_details}")
+        return f"Error generating PDF: {str(e)}<br><br>Please check server logs for details.", 500
 
 
 @app.route('/<path:path>')
