@@ -279,12 +279,36 @@ def download_pdf():
         elements.append(title)
         elements.append(Spacer(1, 0.3 * inch))
 
-        # Create table data - simplified without images first
-        data = [['Name', 'Position', 'DOB', 'Height', 'Place of Birth']]
+        # Create table data with photos
+        data = [['Photo', 'Name', 'Position', 'DOB', 'Height', 'Place of Birth']]
 
         for player in players:
             name, pos, dob, height, pob, photo_blob = player
+
+            # Handle photo
+            photo_element = None
+            if photo_blob:
+                try:
+                    # Convert memoryview/buffer to bytes if needed
+                    if isinstance(photo_blob, memoryview):
+                        photo_bytes = bytes(photo_blob)
+                    elif isinstance(photo_blob, (bytes, bytearray)):
+                        photo_bytes = bytes(photo_blob)
+                    else:
+                        photo_bytes = photo_blob
+
+                    # Create image from bytes
+                    img_buffer = io.BytesIO(photo_bytes)
+                    photo_element = Image(img_buffer, width=0.8 * inch, height=0.8 * inch)
+
+                except Exception as img_error:
+                    print(f"Error loading photo for {name}: {img_error}")
+                    photo_element = Paragraph("<i>Image Error</i>", styles['Normal'])
+            else:
+                photo_element = Paragraph("<i>No Photo</i>", styles['Normal'])
+
             data.append([
+                photo_element,
                 name or "N/A",
                 pos or "N/A",
                 dob or "N/A",
@@ -293,7 +317,7 @@ def download_pdf():
             ])
 
         # Create and style table
-        table = Table(data, colWidths=[2.5 * inch, 2 * inch, 1.5 * inch, 1.2 * inch, 2.5 * inch])
+        table = Table(data, colWidths=[1.2 * inch, 2 * inch, 1.5 * inch, 1.2 * inch, 1.2 * inch, 2.5 * inch])
         table.setStyle(TableStyle([
             # Header row
             ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
